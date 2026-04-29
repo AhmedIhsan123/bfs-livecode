@@ -1,13 +1,23 @@
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.Map;
 public class Search {
     public static void main(String[] args) {
-        Location myLoc = new Location(5, 88);
-        System.out.println(myLoc);
+        // Location myLoc = new Location(5, 88);
+        
+        char[][] grid = {
+            {'o', 'o', 'o', 'o', 'c', 'w', 'c', 'o'},
+            {'w', 'o', 'o', 'w', 'w', 'c', 'w', 'o'},
+            {'o', 'o', 'o', 'o', 'R', 'w', 'o', 'o'},
+            {'o', 'o', 'w', 'w', 'w', 'o', 'o', 'o'},
+            {'o', 'o', 'o', 'o', 'c', 'o', 'o', 'o'}
+        };
+        System.out.println(nearestCheese(grid));
     } 
     /**
      * Finds the location of the nearest reachable cheese from the rat's position.
@@ -44,16 +54,29 @@ public class Search {
         queue.add(startLoc);
         Set<Location> visited = new HashSet<>();
 
+        Map<Location, Location> prevs = new HashMap<>();
         while(!queue.isEmpty()) {
             Location current = queue.poll();
-            if (visited.contains(current)) continue;
             if (maze[current.row()][current.col()] == 'c') {
+                List<Location> path = new ArrayList<>();
+                Location pointer = current;
+                while(pointer.equals(startLoc)) {
+                    path.add(pointer);
+                    pointer = prevs.get(pointer);
+                }
+
+                path.add(startLoc);
+
+                System.out.println(path.reversed());
                 return new int[] {current.row(), current.row()};
             };
-            visited.add(current);
+
             
             for (Location neighbor : neighbors(maze, current)) {
+                if (visited.contains(neighbor)) continue;
+                visited.add(neighbor);
                 queue.add(neighbor);
+                prevs.put(neighbor, current);
             };
         }
 
@@ -62,43 +85,44 @@ public class Search {
 
     public static List<Location> neighbors(char[][] maze, Location currentLoc) {
         List<Location> result = new ArrayList<>();
+        
+        int[] [] moves = new int[][] {
+            { -1, 0 }, //up
+            { 1, 0 }, //down
+            { 0, -1 }, //left
+            { 0, 1 },  //right
 
-        int[][] moves = new int[][] {
-            {-1, 0},    // up
-            {1, 0},    // down
-            {0, -1},  // left
-            {0, 1}   // right
         };
 
-        for (int[] move : moves) {
+        for(int[] move : moves) {
             int newR = currentLoc.row() + move[0];
             int newC = currentLoc.col() + move[1];
-            char loc = maze[newR][newC];
-            if (
-                (newR >= 0 && newR < maze.length) && 
-                (newC >= 0 && newC < maze[0].length) && 
-                (loc != 'w')) {
-                    result.add(new Location(newR, newC));
+
+            if(newR >= 0 && newR < maze.length && newC >=0 && newC < maze[0].length && maze[newR][newC] != 'w'){
+                result.add(new Location(newR, newC));
             }
         }
-
         return result;
     }
 
     public static Location findRat(char[][] maze) throws EscapedRatException, CrowdedMazeException {
-        Location ratLocation = null;
-        for (int r = 0; r < maze.length; r++) {
-            for (int c = 0; c < maze[r][c]; c++) {
-                if (maze[r][c] == 'R') {
-                    if (ratLocation == null) {
-                        ratLocation = new Location(r, c);
-                    } else {
+        Location location = null;
+        for(int row  = 0; row < maze.length; row++){
+            for(int col=0; col < maze[row].length; col++){
+                if(maze[row][col] == 'R'){
+                    if(location == null){
+                        location = new Location(row, col);
+                    } else{
                         throw new CrowdedMazeException();
-                    };
-                };
+                    }
+                }
             }
         }
-        if (ratLocation == null) throw new EscapedRatException();
-        return ratLocation;
+
+        if(location == null){
+            throw new EscapedRatException();
+        }
+
+        return location;
     }
 }
